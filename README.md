@@ -33,9 +33,6 @@ streamlit run app.py
 ## Live Demo
 🔗 [https://USERNAME-dashboard-gempa-bmkg.streamlit.app](https://USERNAME-dashboard-gempa-bmkg.streamlit.app)
 
-## Screenshots
-[Tambahkan screenshot nanti]
-
 ## Tech Stack
 - **Frontend:** Streamlit
 - **Data Visualization:** Plotly
@@ -53,12 +50,10 @@ streamlit run app.py
 ## Attribution
 Sumber data: **BMKG (Badan Meteorologi, Klimatologi, dan Geofisika)**
 
-## License
-MIT License
-
 ## Author
-[Nama Anda]
+Aura Putri
+Citra Syafira
 
 ## Contact
-- GitHub: [@username](https://github.com/username)
+- GitHub: [@auraakr](https://github.com/auraakr)
 - Email: aurakkireina@upi.edu
