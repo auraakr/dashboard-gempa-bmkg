@@ -150,7 +150,7 @@ with st.sidebar:
     st.image("https://cdn.bmkg.go.id/Web/Logo-BMKG-new.png", width=200)
     st.markdown("## 📊 Pengaturan")
     
-    refresh = st.button("🔄 Refresh Data", width=True)
+    refresh = st.button("🔄 Refresh Data", use_container_width=True)
     if refresh:
         st.cache_data.clear()
         st.rerun()
@@ -221,7 +221,7 @@ with tab1:
         with col2:
             st.subheader("🗺️ Shakemap")
             shakemap_url = f"https://data.bmkg.go.id/{gempa_terkini['Shakemap']}"
-            st.image(shakemap_url, width=True)
+            st.image(shakemap_url, use_container_width=True)
         
         # Peta lokasi
         st.subheader("📍 Lokasi Episentrum")
@@ -249,7 +249,7 @@ with tab1:
             mapbox_style="open-street-map",
             margin={"r": 0, "t": 0, "l": 0, "b": 0}
         )
-        st.plotly_chart(fig, width=True)
+        st.plotly_chart(fig, use_container_width=True)
     else:
         st.error("Gagal memuat data gempa terkini")
 
@@ -294,7 +294,7 @@ with tab2:
                 yaxis_title="Frekuensi",
                 showlegend=False
             )
-            st.plotly_chart(fig1, width=True)
+            st.plotly_chart(fig1, use_container_width=True)
         
         with col2:
             st.subheader("Gempa per Wilayah")
@@ -311,7 +311,7 @@ with tab2:
                 yaxis_title="Wilayah",
                 showlegend=False
             )
-            st.plotly_chart(fig2, width=True)
+            st.plotly_chart(fig2, use_container_width=True)
         
         # Tabel data
         st.subheader("📋 Daftar Lengkap")
@@ -322,7 +322,7 @@ with tab2:
         
         st.dataframe(
             df_display[['Tanggal', 'Jam', 'Magnitude', 'Kedalaman', 'Wilayah', 'Kategori', 'Potensi']],
-            width=True,
+            use_container_width=True,
             height=400
         )
     else:
@@ -358,7 +358,7 @@ with tab3:
         
         st.dataframe(
             df_display[['Tanggal', 'Jam', 'Magnitude', 'Kedalaman', 'Wilayah', 'Dirasakan', 'Kategori']],
-            width=True,
+            use_container_width=True,
             height=500
         )
         
@@ -387,7 +387,7 @@ with tab3:
             yaxis_title="Magnitude",
             showlegend=False
         )
-        st.plotly_chart(fig3, width=True)
+        st.plotly_chart(fig3, use_container_width=True)
         
     else:
         st.error("Gagal memuat data gempa dirasakan")
@@ -457,7 +457,7 @@ with tab4:
             margin={"r": 0, "t": 40, "l": 0, "b": 0}
         )
         
-        st.plotly_chart(fig_map, width=True)
+        st.plotly_chart(fig_map, use_container_width=True)
         
         # Statistik wilayah
         st.subheader("📊 Statistik per Wilayah")
@@ -469,7 +469,7 @@ with tab4:
         wilayah_stats.columns = ['Jumlah', 'Magnitude Rata-rata', 'Magnitude Maksimal']
         wilayah_stats = wilayah_stats.sort_values('Jumlah', ascending=False).head(10)
         
-        st.dataframe(wilayah_stats, width=True)
+        st.dataframe(wilayah_stats, use_container_width=True)
         
     else:
         st.error("Gagal memuat data untuk peta")
@@ -518,7 +518,7 @@ with tab5:
         with col3:
             test_size = st.slider("Test Size (%)", 10, 40, 20, 5)
         
-        if st.button("🚀 Latih Model", type="primary", width=True):
+        if st.button("🚀 Latih Model", type="primary", use_container_width=True):
             with st.spinner("Melatih model..."):
                 # Re-split dengan test_size baru
                 X_train, X_test, y_train, y_test = train_test_split(
@@ -587,7 +587,7 @@ with tab5:
                     height=500
                 )
                 
-                st.plotly_chart(fig_pred, width=True)
+                st.plotly_chart(fig_pred, use_container_width=True)
                 
                 # Feature importance
                 st.subheader("🎯 Feature Importance")
@@ -605,7 +605,7 @@ with tab5:
                     color='Importance',
                     color_continuous_scale='Reds'
                 )
-                st.plotly_chart(fig_imp, width=True)
+                st.plotly_chart(fig_imp, use_container_width=True)
                 
                 # Save model untuk prediksi manual
                 st.session_state['trained_model'] = model
@@ -635,7 +635,7 @@ with tab5:
                 help="Kedalaman episentrum gempa"
             )
         
-        if st.button("🎯 Prediksi Magnitude", width=True):
+        if st.button("🎯 Prediksi Magnitude", use_container_width=True):
             if 'trained_model' in st.session_state:
                 model = st.session_state['trained_model']
                 
