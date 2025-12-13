@@ -49,7 +49,7 @@ def fetch_gempa_terkini():
             'Wilayah': gempa['Wilayah'],
             'Potensi': gempa['Potensi'],
             'Dirasakan': gempa.get('Dirasakan', '-'),
-            'Shakemap': gempa['Shakemap']
+            'Shakemap': gempa['Shakemap'] # Tetap ambil data untuk jaga-jaga, tapi tidak akan ditampilkan
         }
     except Exception as e:
         st.error(f"Gagal mengambil data gempa terkini: {e}")
@@ -204,27 +204,33 @@ with tab1:
         
         st.markdown("---")
         
-        col1, col2 = st.columns([2, 1])
+        # Menggunakan 3 kolom untuk menampilkan detail (Menghapus Shakemap)
+        col1, col2, col3 = st.columns(3) 
         
         with col1:
             st.subheader("📍 Informasi Lokasi")
             st.write(f"**Wilayah:** {gempa_terkini['Wilayah']}")
             st.write(f"**Koordinat:** {gempa_terkini['Lintang']}, {gempa_terkini['Bujur']}")
+        
+        with col2:
+            st.subheader("Classification")
             st.write(f"**Kategori:** {emoji} {kategori}")
             
             if gempa_terkini['Potensi']:
-                st.warning(f"**⚠️ Potensi:** {gempa_terkini['Potensi']}")
+                st.warning(f"**⚠️ Potensi Tsunami:** {gempa_terkini['Potensi']}")
             
+        with col3:
+            st.subheader("Dampak")
             if gempa_terkini['Dirasakan'] != '-':
                 st.info(f"**👥 Dirasakan:** {gempa_terkini['Dirasakan']}")
-        
-        with col2:
-            st.subheader("🗺️ Shakemap")
-            shakemap_url = f"https://data.bmkg.go.id/{gempa_terkini['Shakemap']}"
-            st.image(shakemap_url, use_container_width=True)
-        
+            else:
+                st.caption("Belum ada informasi dirasakan atau tidak dirasakan.")
+
+
         # Peta lokasi
-        st.subheader("📍 Lokasi Episentrum")
+        st.subheader("🗺️ Lokasi Episentrum")
+        
+        # 
         
         map_data = pd.DataFrame({
             'lat': [gempa_terkini['Lintang']],
@@ -298,12 +304,11 @@ with tab2:
         
         with col2:
             st.subheader("Gempa per Wilayah")
-            wilayah_count = df_m5['Wilayah'].value_counts().head(10)
             fig2 = px.bar(
-                x=wilayah_count.values,
-                y=wilayah_count.index,
+                x=df_m5['Wilayah'].value_counts().head(10).values,
+                y=df_m5['Wilayah'].value_counts().head(10).index,
                 orientation='h',
-                color=wilayah_count.values,
+                color=df_m5['Wilayah'].value_counts().head(10).values,
                 color_continuous_scale='Reds'
             )
             fig2.update_layout(
@@ -363,14 +368,11 @@ with tab3:
         )
         
         # Visualisasi wilayah yang sering merasakan gempa
-        st.subheader("🏘️ Wilayah yang Sering Merasakan Gempa")
+        st.subheader("📈 Korelasi Tanggal dan Magnitude")
         
-        dirasakan_text = ' '.join(df_dirasakan['Dirasakan'].astype(str))
-        
-        # Parse wilayah dari teks dirasakan (simplified)
         st.info("""
-        Grafik menunjukkan distribusi magnitude gempa yang dirasakan. 
-        Semakin besar magnitude, semakin luas area yang merasakan getaran.
+        Grafik menunjukkan distribusi magnitude gempa yang dirasakan dari waktu ke waktu. 
+        Titik yang lebih besar mewakili gempa dengan magnitude yang lebih tinggi.
         """)
         
         fig3 = px.scatter(
@@ -408,7 +410,11 @@ with tab4:
         df_m5['Tipe'] = 'M5+'
         df_dirasakan['Tipe'] = 'Dirasakan'
         
-        df_all = pd.concat([df_m5, df_dirasakan], ignore_index=True)
+        # Menghapus duplikasi baris dengan kombinasi Lintang, Bujur, dan Magnitude yang sama
+        df_all = pd.concat([df_m5, df_dirasakan]).drop_duplicates(
+            subset=['Lintang', 'Bujur', 'Magnitude'], 
+            keep='first'
+        ).reset_index(drop=True)
         
         # Filter
         col1, col2 = st.columns(2)
@@ -494,7 +500,10 @@ with tab5:
     df_dirasakan = fetch_gempa_dirasakan()
     
     if not df_m5.empty and not df_dirasakan.empty:
-        df_train = pd.concat([df_m5, df_dirasakan], ignore_index=True)
+        df_train = pd.concat([df_m5, df_dirasakan]).drop_duplicates(
+            subset=['Lintang', 'Bujur', 'Magnitude'], 
+            keep='first'
+        ).reset_index(drop=True)
         
         # Parse kedalaman
         df_train['Kedalaman_num'] = df_train['Kedalaman'].apply(parse_kedalaman)
@@ -502,11 +511,6 @@ with tab5:
         # Prepare features
         X = df_train[['Lintang', 'Bujur', 'Kedalaman_num']]
         y = df_train['Magnitude']
-        
-        # Split data
-        X_train, X_test, y_train, y_test = train_test_split(
-            X, y, test_size=0.2, random_state=42
-        )
         
         # Training controls
         col1, col2, col3 = st.columns(3)
@@ -516,15 +520,16 @@ with tab5:
         with col2:
             max_depth = st.slider("Max Depth", 5, 20, 10, 5)
         with col3:
-            test_size = st.slider("Test Size (%)", 10, 40, 20, 5)
+            test_size_percent = st.slider("Test Size (%)", 10, 40, 20, 5)
+            test_size = test_size_percent / 100
         
         if st.button("🚀 Latih Model", type="primary", use_container_width=True):
+            # Split data
+            X_train, X_test, y_train, y_test = train_test_split(
+                X, y, test_size=test_size, random_state=42
+            )
+            
             with st.spinner("Melatih model..."):
-                # Re-split dengan test_size baru
-                X_train, X_test, y_train, y_test = train_test_split(
-                    X, y, test_size=test_size/100, random_state=42
-                )
-                
                 # Train model
                 model = RandomForestRegressor(
                     n_estimators=n_estimators,
@@ -547,11 +552,13 @@ with tab5:
                 col1, col2, col3, col4 = st.columns(4)
                 col1.metric("RMSE", f"{rmse:.3f}")
                 col2.metric("MAE", f"{mae:.3f}")
-                col3.metric("R² Score", f"{r2:.3f}")
-                col4.metric("Akurasi", f"{r2*100:.1f}%")
+                col3.metric("R² Score (Akurasi)", f"{r2:.3f}")
+                col4.metric("Jumlah Data Training", len(X_train))
                 
                 # Visualisasi prediksi
                 st.subheader("📈 Hasil Prediksi vs Aktual")
+                
+                # 
                 
                 fig_pred = go.Figure()
                 
@@ -619,19 +626,19 @@ with tab5:
         with col1:
             input_lat = st.number_input(
                 "Lintang (Latitude)",
-                -11.0, 6.0, -6.2, 0.1,
+                float(X['Lintang'].min()), float(X['Lintang'].max()), float(X['Lintang'].mean()), 0.1,
                 help="Range: -11 (Selatan) hingga 6 (Utara)"
             )
         with col2:
             input_lon = st.number_input(
                 "Bujur (Longitude)",
-                95.0, 141.0, 106.8, 0.1,
+                float(X['Bujur'].min()), float(X['Bujur'].max()), float(X['Bujur'].mean()), 0.1,
                 help="Range: 95 (Barat) hingga 141 (Timur)"
             )
         with col3:
             input_depth = st.number_input(
                 "Kedalaman (km)",
-                0.0, 700.0, 10.0, 1.0,
+                float(X['Kedalaman_num'].min()), float(X['Kedalaman_num'].max()), float(X['Kedalaman_num'].mean()), 1.0,
                 help="Kedalaman episentrum gempa"
             )
         
@@ -651,11 +658,11 @@ with tab5:
                 
                 with col2:
                     if prediction < 4:
-                        st.success("Kemungkinan tidak menimbulkan kerusakan")
+                        st.success("Tingkat kerusakan: Rendah")
                     elif prediction < 6:
-                        st.warning("Berpotensi merusak bangunan tidak kokoh")
+                        st.warning("Tingkat kerusakan: Sedang (Berpotensi merusak bangunan tidak kokoh)")
                     else:
-                        st.error("Berpotensi merusak bangunan dan infrastruktur")
+                        st.error("Tingkat kerusakan: Tinggi (Berpotensi merusak bangunan dan infrastruktur)")
             else:
                 st.warning("⚠️ Silakan latih model terlebih dahulu!")
     
